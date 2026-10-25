@@ -374,7 +374,7 @@ public class ClientHooks {
     @ApiStatus.Internal
     public static void collectSpecialScreenAreas(Minecraft minecraft, Consumer<ScreenRectangle> consumer) {
         minecraft.gui.toastManager().collectScreenAreas(consumer);
-        minecraft.gui.hud.collectSpecialScreenAreas(consumer);
+        minecraft.gui.hud.collectSubtitleAreas(consumer);
     }
 
     public static void extractScreen(Screen screen, Stack<Screen> backgroundLayers, GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {

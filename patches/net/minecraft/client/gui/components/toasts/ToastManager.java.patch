@@ -1,32 +1,19 @@
 --- a/net/minecraft/client/gui/components/toasts/ToastManager.java
 +++ b/net/minecraft/client/gui/components/toasts/ToastManager.java
-@@ -91,14 +_,31 @@
-                 toast.extractRenderState(graphics, screenWidth);
-             }
- 
--            if (this.minecraft.options.musicToast().get().renderToast()
--                && this.nowPlayingToast != null
--                && (this.minecraft.gui.screen() == null || !(this.minecraft.gui.screen() instanceof PauseScreen))) {
-+            if (this.shouldRenderNowPlayingToast()) {
-                 this.nowPlayingToast.extractRenderState(graphics, screenWidth);
-             }
+@@ -99,6 +_,21 @@
          }
      }
  
-+    private boolean shouldRenderNowPlayingToast() {
-+        return this.minecraft.options.musicToast().get().renderToast()
-+            && this.nowPlayingToast != null
-+            && (this.minecraft.gui.screen() == null || !(this.minecraft.gui.screen() instanceof PauseScreen));
-+    }
-+
-+    @org.jetbrains.annotations.ApiStatus.Internal
++    /// Neo: Collects the areas of the currently visible toasts.
 +    public void collectScreenAreas(java.util.function.Consumer<net.minecraft.client.gui.navigation.ScreenRectangle> consumer) {
 +        if (!this.minecraft.gui.hud.isHidden()) {
 +            int screenWidth = this.minecraft.getWindow().getGuiScaledWidth();
 +            for (ToastManager.ToastInstance<?> toast : this.visibleToasts) {
 +                toast.collectScreenAreas(consumer, screenWidth);
 +            }
-+            if (this.shouldRenderNowPlayingToast()) {
++            if (this.minecraft.options.musicToast().get().renderToast()
++                && this.nowPlayingToast != null
++                && (this.minecraft.gui.screen() == null || !(this.minecraft.gui.screen() instanceof PauseScreen))) {
 +                this.nowPlayingToast.collectScreenAreas(consumer, screenWidth);
 +            }
 +        }
@@ -43,15 +30,8 @@
          this.queued.add(toast);
      }
  
-@@ -265,10 +_,24 @@
- 
-         public void extractRenderState(GuiGraphicsExtractor graphics, int screenWidth) {
-             if (!this.hasFinishedRendering) {
-+                float x = this.toast.xPos(screenWidth, this.visiblePortion);
-+                float y = this.toast.yPos(this.firstSlotIndex);
-                 graphics.pose().pushMatrix();
--                graphics.pose().translate(this.toast.xPos(screenWidth, this.visiblePortion), this.toast.yPos(this.firstSlotIndex));
-+                graphics.pose().translate(x, y);
+@@ -269,6 +_,18 @@
+                 graphics.pose().translate(this.toast.xPos(screenWidth, this.visiblePortion), this.toast.yPos(this.firstSlotIndex));
                  this.toast.extractRenderState(graphics, ToastManager.this.minecraft.font, this.fullyVisibleFor);
                  graphics.pose().popMatrix();
 +            }

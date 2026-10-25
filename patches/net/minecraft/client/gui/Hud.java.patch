@@ -100,8 +100,8 @@
          }
      }
  
-+    @org.jetbrains.annotations.ApiStatus.Internal
-+    public void collectSpecialScreenAreas(java.util.function.Consumer<net.minecraft.client.gui.navigation.ScreenRectangle> consumer) {
++    /// Neo: Collects the areas of subtitles that are currently visible alongside screens.
++    public void collectSubtitleAreas(java.util.function.Consumer<net.minecraft.client.gui.navigation.ScreenRectangle> consumer) {
 +        if (!this.isHidden || this.minecraft.gui.screen() != null && this.minecraft.gui.screen().isInGameUi()) {
 +            this.subtitleOverlay.collectScreenAreas(consumer);
 +        }

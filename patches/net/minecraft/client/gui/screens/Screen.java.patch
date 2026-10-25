@@ -27,8 +27,8 @@
 +
 +    /// Neo: Collects the areas occupied by this screen using the given query parameters.
 +    /// All areas use GUI-scaled absolute screen coordinates.
-+    /// Some additional areas, such as inventory effects and creative inventory tabs, are recorded during rendering.
-+    /// Those areas reflect the most recent render pass and are not available before the first render.
++    /// Some additional areas, such as inventory effects, creative inventory tabs and subtitles, reflect the most recent render pass
++    /// and are not available before the first render.
 +    ///
 +    /// @param consumer       accepts the occupied areas
 +    /// @param includePrimary whether to include the primary content area
