@@ -16,6 +16,8 @@ import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.neoforged.neoforge.client.event.ScreenEvent;
+import net.neoforged.neoforge.client.gui.ScreenAreaProvider;
 import org.junit.jupiter.api.Test;
 
 public class ScreenAreaTests {
@@ -54,7 +56,7 @@ public class ScreenAreaTests {
     void providersRunAfterTheScreensOwnAreas() {
         TestScreen screen = new TestScreen(PRIMARY);
         screen.extraAreas.add(EXTRA);
-        screen.addScreenAreaProvider((includePrimary, requesterId, out) -> out.accept(PROVIDED));
+        addProvider(screen, (includePrimary, requesterId, out) -> out.accept(PROVIDED));
 
         assertEquals(List.of(PRIMARY, EXTRA, PROVIDED), collect(screen, true, null));
     }
@@ -64,11 +66,11 @@ public class ScreenAreaTests {
         TestScreen screen = new TestScreen(PRIMARY);
         List<Boolean> includePrimary = new ArrayList<>();
         List<Identifier> requesterIds = new ArrayList<>();
-        screen.addScreenAreaProvider((primary, requester, out) -> {
+        addProvider(screen, (primary, requester, out) -> {
             includePrimary.add(primary);
             requesterIds.add(requester);
         });
-        screen.addScreenAreaProvider((primary, requester, out) -> {
+        addProvider(screen, (primary, requester, out) -> {
             includePrimary.add(primary);
             requesterIds.add(requester);
         });
@@ -84,7 +86,7 @@ public class ScreenAreaTests {
     void defaultQueryHasNoRequester() {
         TestScreen screen = new TestScreen(PRIMARY);
         List<Identifier> requesterIds = new ArrayList<>();
-        screen.addScreenAreaProvider((includePrimary, requesterId, out) -> requesterIds.add(requesterId));
+        addProvider(screen, (includePrimary, requesterId, out) -> requesterIds.add(requesterId));
 
         screen.getScreenAreas(area -> {});
 
@@ -95,11 +97,15 @@ public class ScreenAreaTests {
     @Test
     void providersAreClearedWithWidgets() {
         TestScreen screen = new TestScreen(PRIMARY);
-        screen.addScreenAreaProvider((includePrimary, requesterId, out) -> out.accept(PROVIDED));
+        addProvider(screen, (includePrimary, requesterId, out) -> out.accept(PROVIDED));
 
         screen.clearWidgetsForTest();
 
         assertEquals(List.of(PRIMARY), collect(screen, true, null));
+    }
+
+    private static void addProvider(TestScreen screen, ScreenAreaProvider provider) {
+        new ScreenEvent.Init.Post(screen, List.of(), listener -> {}, listener -> {}).addScreenAreaProvider(provider);
     }
 
     private static List<ScreenRectangle> collect(TestScreen screen, boolean includePrimary, Identifier requesterId) {
