@@ -23,15 +23,15 @@
          return this.screen;
      }
  
-+    /// Neo: {@return an iterator over the screens currently rendered by the GUI, from the bottom-most background layer
-+    /// to the top-most screen} The returned iterator is over an immutable snapshot.
++    /// Neo: {@return an immutable snapshot of the screens currently rendered by the GUI,
++    /// from the bottom-most background layer to the top-most screen}
 +    @Contract(pure = true)
-+    public java.util.ListIterator<Screen> screenStackIterator() {
++    public List<Screen> getScreenStack() {
 +        List<Screen> screens = new ArrayList<>(this.screenLayers);
 +        if (this.screen != null) {
 +            screens.add(this.screen);
 +        }
-+        return List.copyOf(screens).listIterator();
++        return List.copyOf(screens);
 +    }
 +
      public void setScreen(@Nullable Screen screen) {

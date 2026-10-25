@@ -354,9 +354,7 @@ public class GuiTests {
         test.framework().modEventBus().addListener((RegisterGuiLayersEvent event) -> {
             event.registerAboveAll(Identifier.fromNamespaceAndPath(test.createModId(), "screen_area_test"), (graphics, _) -> {
                 if (!test.framework().tests().isEnabled(test.id())) return;
-                var screens = Minecraft.getInstance().gui.screenStackIterator();
-                while (screens.hasNext()) {
-                    Screen screen = screens.next();
+                for (Screen screen : Minecraft.getInstance().gui.getScreenStack()) {
                     if (screen instanceof AbstractContainerScreen<?>) {
                         screen.getScreenAreas(area -> graphics.fill(area.left(), area.top(), area.right(), area.bottom(), 0x30FF0000), true, requesterId);
                     }

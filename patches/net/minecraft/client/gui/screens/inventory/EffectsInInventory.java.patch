@@ -1,45 +1,22 @@
 --- a/net/minecraft/client/gui/screens/inventory/EffectsInInventory.java
 +++ b/net/minecraft/client/gui/screens/inventory/EffectsInInventory.java
-@@ -43,18 +_,30 @@
-     }
- 
-     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-+        EffectLayout layout = this.getEffectLayout();
-+        if (layout != null) {
-+            this.extractEffects(graphics, layout.effects(), layout.x(), layout.yStep(), mouseX, mouseY, layout.maxWidth());
-+        }
-+    }
-+
-+    private @org.jspecify.annotations.Nullable EffectLayout getEffectLayout() {
-         int xo = this.screen.leftPos + this.screen.imageWidth + 2;
+@@ -47,7 +_,15 @@
          int availableWidth = this.screen.width - xo;
          Collection<MobEffectInstance> activeEffects = this.minecraft.player.getActiveEffects();
--        if (!activeEffects.isEmpty() && availableWidth >= 32) {
+         if (!activeEffects.isEmpty() && availableWidth >= 32) {
 -            int maxWidth = availableWidth >= 120 ? availableWidth - 7 : 32;
--            int yStep = 33;
--            if (activeEffects.size() > 5) {
--                yStep = 132 / (activeEffects.size() - 1);
--            }
--
--            this.extractEffects(graphics, activeEffects, xo, yStep, mouseX, mouseY, maxWidth);
--        }
-+        if (activeEffects.isEmpty() || availableWidth < 32) {
-+            return null;
-+        }
-+        boolean wideDisplay = availableWidth >= 120;
-+        var event = net.neoforged.neoforge.client.ClientHooks.onScreenPotionSize(screen, availableWidth, !wideDisplay, xo);
-+        if (event.isCanceled()) {
-+            return null;
-+        }
-+        wideDisplay = !event.isCompact();
-+        xo = event.getHorizontalOffset();
-+        activeEffects = activeEffects.stream().filter(net.neoforged.neoforge.client.ClientHooks::shouldRenderEffect).sorted().collect(java.util.stream.Collectors.toList());
-+        int maxWidth = wideDisplay ? availableWidth - 7 : 32;
-+        int yStep = activeEffects.size() > 5 ? 132 / (activeEffects.size() - 1) : 33;
-+        return new EffectLayout(activeEffects, xo, yStep, maxWidth);
-     }
- 
-     private void extractEffects(
++            boolean wideDisplay = availableWidth >= 120;
++            var event = net.neoforged.neoforge.client.ClientHooks.onScreenPotionSize(screen, availableWidth, !wideDisplay, xo);
++            if (event.isCanceled()) return;
++            wideDisplay = !event.isCompact();
++            xo = event.getHorizontalOffset();
++
++            activeEffects = activeEffects.stream().filter(net.neoforged.neoforge.client.ClientHooks::shouldRenderEffect).sorted().collect(java.util.stream.Collectors.toList());
++
++            int maxWidth = wideDisplay ? availableWidth - 7 : 32;
+             int yStep = 33;
+             if (activeEffects.size() > 5) {
+                 yStep = 132 / (activeEffects.size() - 1);
 @@ -65,11 +_,14 @@
          Font font = this.screen.getFont();
  
@@ -56,41 +33,36 @@
              graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Hud.getMobEffectSprite(effect.getEffect()), x0 + 7, y0 + 7, 18, 18);
              y0 += yStep;
          }
-@@ -78,16 +_,44 @@
-     private int extractBackground(
-         GuiGraphicsExtractor graphics, Font font, Component effectName, Component duration, int x0, int y0, boolean isAmbient, int maxTextureWidth
-     ) {
--        int nameWidth = 32 + font.width(effectName) + 7;
--        int durationWidth = 32 + font.width(duration) + 7;
--        int textureWidth = Math.min(maxTextureWidth, Math.max(nameWidth, durationWidth));
-+        int textureWidth = this.getBackgroundWidth(font, effectName, duration, maxTextureWidth);
-         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, isAmbient ? EFFECT_BACKGROUND_AMBIENT_SPRITE : EFFECT_BACKGROUND_SPRITE, x0, y0, textureWidth, 32);
+@@ -85,9 +_,42 @@
          return textureWidth;
      }
  
-+    private int getBackgroundWidth(Font font, Component effectName, Component duration, int maxTextureWidth) {
-+        int nameWidth = 32 + font.width(effectName) + 7;
-+        int durationWidth = 32 + font.width(duration) + 7;
-+        return Math.min(maxTextureWidth, Math.max(nameWidth, durationWidth));
-+    }
-+
 +    /// Neo: Collects the areas of the currently visible effect backgrounds.
 +    public void collectScreenAreas(java.util.function.Consumer<net.minecraft.client.gui.navigation.ScreenRectangle> consumer) {
-+        EffectLayout layout = this.getEffectLayout();
-+        if (layout != null) {
-+            int y = this.screen.topPos;
-+            Font font = this.screen.getFont();
-+            for (MobEffectInstance effect : layout.effects()) {
-+                Component effectText = this.getEffectName(effect);
-+                Component duration = MobEffectUtil.formatDuration(effect, 1.0F, this.minecraft.level.tickRateManager().tickrate());
-+                int width = this.getBackgroundWidth(font, effectText, duration, layout.maxWidth());
-+                consumer.accept(new net.minecraft.client.gui.navigation.ScreenRectangle(layout.x(), y, width, 32));
-+                y += layout.yStep();
-+            }
++        int xo = this.screen.leftPos + this.screen.imageWidth + 2;
++        int availableWidth = this.screen.width - xo;
++        Collection<MobEffectInstance> activeEffects = this.minecraft.player.getActiveEffects();
++        if (activeEffects.isEmpty() || availableWidth < 32) {
++            return;
++        }
++        var event = net.neoforged.neoforge.client.ClientHooks.onScreenPotionSize(screen, availableWidth, availableWidth < 120, xo);
++        if (event.isCanceled()) {
++            return;
++        }
++        int maxWidth = event.isCompact() ? 32 : availableWidth - 7;
++        xo = event.getHorizontalOffset();
++        activeEffects = activeEffects.stream().filter(net.neoforged.neoforge.client.ClientHooks::shouldRenderEffect).sorted().collect(java.util.stream.Collectors.toList());
++        int yStep = activeEffects.size() > 5 ? 132 / (activeEffects.size() - 1) : 33;
++        int y = this.screen.topPos;
++        Font font = this.screen.getFont();
++        for (MobEffectInstance effect : activeEffects) {
++            Component effectText = this.getEffectName(effect);
++            Component duration = MobEffectUtil.formatDuration(effect, 1.0F, this.minecraft.level.tickRateManager().tickrate());
++            int width = Math.min(maxWidth, Math.max(32 + font.width(effectText) + 7, 32 + font.width(duration) + 7));
++            consumer.accept(new net.minecraft.client.gui.navigation.ScreenRectangle(xo, y, width, 32));
++            y += yStep;
 +        }
 +    }
-+
-+    private record EffectLayout(Collection<MobEffectInstance> effects, int x, int yStep, int maxWidth) {}
 +
 +    // Neo: Call the method that takes the effect instance for which the text is being rendered
      private void extractText(
